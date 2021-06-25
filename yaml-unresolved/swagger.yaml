@@ -1,0 +1,1983 @@
+openapi: 3.0.3
+info:
+  version: 2.5.2
+  title: GLR 4 Explore
+  description: API definitions for Explore and GLR integration. simplified API definition to compress size and increase reuse
+  contact:
+    name: John Tyndale
+    email: john@greatlittlerewards.co.uk
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: product
+    description: a clone of the shopify product data
+  - name: webhook
+    description: backend processing calls
+  - name: centre
+    description: Basic School info including logo url if available
+  - name: store
+    description: Access to the glr4s store
+  - name: cabinet
+  - name: cart
+    description: >-
+      this is list of order lineitems that belong to a specific student within a
+      school order
+  - name: user
+  - name: processOrder
+    description: 'any tag starting with the word process implies there is complex logic. This is distinct and seprate from the base system api functions. In this case anything tagged processOrder will include some complex process interaction with other APIS eg user rewards points or a related cabinet'
+  - name: container
+    description: 'A generic flexible method for grouping users. A container has a single owner and many members. Containers can contain containers. Eg a learning centre is a container owned by a manager but within this there might be a tutor group of members and teachers with an owner/lead'
+paths:
+  /product/{product_id}:
+    parameters:
+      - in: path
+        name: product_id
+        required: true
+        schema:
+          type: number
+          example: 123213213333
+    get:
+      tags:
+        - product
+      summary: get the product details including all variant details
+      responses:
+        '200':
+          description: returns a valid complete product
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Product'
+        '401':
+          description: unauthorised
+        '404':
+          description: not found
+  /login:
+    post:
+      tags:
+        - user
+      summary: implement a basic uid and password requestion
+      responses:
+        '201':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid user
+  /webhook/updateUserContainerLists:
+    summary: trigger a backend process to update all containers. requires second key
+    description: Takes a webhook parameter which it will use to provide an update. If the request is accepted return 202 - request accepted. It will also return a coralation id
+    parameters:
+      - in: query
+        name: hook
+        required: true
+        schema:
+          type: string
+          example: 'url/hook/test'
+    post:
+      security: 
+        - ApiKeyAuth: []
+        - APIKeyQueryParam: []
+      tags: 
+        - webhook
+      operationId: updateUserContainerLists
+      summary: updates all users container lists.
+      description: This will check the timestamp of the container and will only update related users if the container has been amended since the last time this processes has exectuted. 
+      responses:
+        '202':
+          description: the request has been accepted and with run. 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  correlationId:
+                    type: string
+                    example: correlationid1234  
+        '400':
+          description: bad request
+        '401':
+          description: unauthorised
+  /container/add:
+    post:
+      tags:
+        - container
+      operationId: addContainer
+      requestBody:
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/Container'
+      responses:
+        '201':
+          description: container created ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  containerId:
+                    type: string
+                    example: dsfdsfdsfe324324324324
+        '400':
+          description: bad request
+        '401':
+          description: unauthorised
+  /container/{containerId}:
+    summary: methods to work with a specific container
+    parameters:
+      - name: containerId
+        required: true
+        in: path
+        description: a valid object id for a container
+        schema:
+          type: string
+          example: er324324324esrewrwer
+    get:
+      tags:
+        - container
+      summary: get a container given a path variable of Object Id
+      operationId: getContainerById
+      responses:
+        '200':
+          description: the full container if it exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Container'
+        '400':
+          description: bad request
+        '401':
+          description: not authorised
+        '404':
+          description: not found
+    post:
+      tags:
+        - container
+      summary: update an existing container.
+      description: This api will ensure that any provided ObjectIds are valid
+      operationId: updateContainerById
+      requestBody:
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/Container'
+      responses:
+        '200':
+          description: Object updated
+          content:
+            application/json:
+              schema:
+                type: string
+                example: created ok 
+        '400':
+          description: bad request
+        '401':
+          description: not authorised
+        '404':
+          description: not found
+    delete:
+      tags:
+        - container
+      summary: delete an order by id
+      operationId: deleteContainerById
+      responses:
+        '200':
+          description: Object deleted
+        '400':
+          description: bad request
+        '401':
+          description: not authorised
+        '404':
+          description: not found
+  /users/related/{userId}:
+    summary: methods for interacting with related users
+    get:
+      tags:
+        - user
+      summary: get related users for the provided user id
+      operationId: getRelatedUsers
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          description: the user id for which we want the related users
+          schema:
+            type: string
+            example: dfdsfds324234234fsd33
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: bad request
+        '401':
+          description: unauthorised
+        '404':
+          description: not found
+  /users:
+    summary: represents a user array
+    description: this is a way to query and receive a paginated list of users
+    get:
+      tags:
+        - user
+      summary: IMPLEMENTED get users by the parameters
+      operationId: getUser
+      parameters:
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centre-id-query-parm-required'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/first-name-query-param'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/last-name-query-param'
+        - name: pointsOver
+          in: query
+          required: false
+          schema:
+            type: number
+            example: 25
+        - name: pointsUnder
+          in: query
+          required: false
+          schema:
+            type: number
+            example: 200
+        - name: roles
+          in: query
+          schema:
+            type: array
+            items: 
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: bad request
+        '401':
+          description: unauthorised
+        '404':
+          description: not found
+    post:
+      tags:
+        - user
+      summary: add users
+      description: add users - need to consider how to limit the size of this
+      operationId: addUsers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200': 
+          description: ok but nothing new created
+        '201': 
+          description: new users were created and their identifiers are in the response
+        '400': 
+          description: bad request
+        '401':
+          description: unauthorised
+    put:
+      tags:
+        - user
+      summary: update a set of existing users data
+      operationId: updateUsers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+        required: true  
+      responses:
+        '200':
+          description: updated ok
+        '201':
+          description: 'created new user as no existing users was found'
+        '400':
+          description: bad request
+        '401':
+          description: unauthorised
+        '404':
+          description: not found
+        '501':
+          description: 'if the request includes Content-* type header attributes that are not implemented it will return 501' 
+  /users/newuser:
+    post:
+      tags:
+        - user
+      summary: IMPLEMENTED post a single user object
+      operationId: addUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '201':
+          description: created ok
+        '400': 
+          description: bad request
+        '401':
+          description: unauthorised
+  /users/{userId}:
+    summary: represents a user
+    description: represents an individual user in the system
+    get:
+      tags:
+        - user
+      summary: IMPLEMENTED get a single user by our Id
+      operationId: getUserById
+      parameters:
+        - in: path
+          name: userId
+          description: either a glr or EL id 
+          schema:
+            type: string
+            example: 'glridexample'
+          required: true
+        - in: query
+          name: IdType
+          description: tells the api which user id you are providing
+          schema:
+            type: string
+            enum: 
+              - glr
+              - el
+            default: glr
+      responses:
+        '200':
+          description: returns a single user if found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Not Found
+    put:
+      tags:
+        - user
+      summary: IMPLEMENTED update the user
+      parameters:
+        - in: path
+          name: userId
+          description: either a glr or EL id 
+          schema:
+            type: string
+            example: 'glridexample'
+          required: true
+        - in: query
+          name: IdType
+          description: tells the api which user id you are providing
+          schema:
+            type: string
+            enum: 
+              - glr
+              - el
+            default: glr
+      operationId: updateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: updated ok
+        '201':
+          description: created new object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: bad requeat
+        '404':
+          description: not found
+    delete:
+      tags:
+        - user
+      summary: delete a user 
+      parameters:
+        - in: path
+          name: userId
+          description: either a glr or EL id 
+          schema:
+            type: string
+            example: 'glridexample'
+          required: true
+        - in: query
+          name: IdType
+          description: tells the api which user id you are providing
+          schema:
+            type: string
+            enum: 
+              - glr
+              - el
+            default: glr
+      operationId: deleteUser
+      responses:
+        '200':
+          description: deleted ok
+        '400': 
+          description: bad request
+        '401':
+          description: unuthorised
+  /users/{userId}/favourites:
+    get:
+      tags:
+        - user
+      summary: get user favourite rewards
+      operationId: getUserFavs
+      parameters: 
+        - in: path
+          name: userId
+          required: true
+          description: a unique user Id
+          schema:
+            type: string
+            example: sdfdsfdsf324324ewrw
+      responses:
+        '200':
+          description: array of rewards
+        '400':
+          description: invalid operation
+        '404':
+          description: not found
+    post:
+      tags: 
+        - user
+      summary: create user favourite rewards
+      operationId: updateUserFavs
+      parameters: 
+        - in: path
+          name: userId
+          required: true
+          description: a unique user Id
+          schema:
+            type: string
+            example: sdfdsfdsf324324ewrw
+      requestBody:
+        description: Enough detail to create a new cabinet
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Favourite'
+        required: true
+      responses:
+        '201':
+          description: favourite created
+        '400':
+          description: invalid operatipon
+  /users/{userId}/favourites/{favouriteId}:
+    delete:
+      tags:
+        - user
+      summary: remove a favourite from a user
+      operationId: removeFav
+      parameters: 
+        - in: path
+          name: userId
+          required: true
+          description: a unique user Id
+          schema:
+            type: string
+            example: sdfdsfdsf324324ewrw
+        - in: path
+          name: favouriteId
+          required: true
+          description: a unique user Id
+          schema:
+            type: string
+            example: sdfdsfdsf324324ewrw
+      responses:
+        '200':
+          description: favourite removed
+        '400': 
+          description: invalid operation
+        '404':
+          description: not found
+  /store/process/order/{orderId}:
+    delete:
+      operationId: processDeleteOrder
+      tags:
+        - store
+        - processOrder
+      summary: Process API to delete an order but only if it can safely restock cabinet and refund member reward points
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          description: a valid order Id
+          schema:
+            type: string
+            example: 2332432rewrewrewr
+      responses:
+        '200':
+          description: ok
+        '400':
+          description: invalid operation
+  /store/order:
+    get:
+      operationId: getOrderList
+      tags:
+        - store
+      summary: get a list of all orders
+      description: >-
+        returns an array of all orders that meet the parameters THAT NEED TO BE
+        DEFINED!
+      parameters:
+        - in: query
+          name: centreId
+          required: false
+          description: the centre we want the orders for.
+          schema:
+            type: string
+            example: 5ce3c2d80e67a54e8fbefe74
+        - in: query
+          name: fromDate
+          description: >-
+            the from which we want to retrieve forward a particular schools
+            orders. example 2019-10-01
+          schema:
+            type: string
+            format: date
+            example: '2019-10-01'
+        - in: query
+          name: fulfillStatus
+          schema:
+            type: string
+            example: 'unfilfilled'
+        - in: query
+          name: userId
+          schema:
+            type: string
+            example: '234324344433334234wer'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+             application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+    put:
+      tags:
+        - store
+      summary: Update an existing Order (assuming the order is held in mongo and not in
+        shopify)
+      operationId: updateOrder
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Order not found
+        '405':
+          description: Validation exception
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Order'
+        description: Order object that needs to be added to the store
+        required: true
+    post:
+      tags:
+        - store
+      summary: add a new order
+      description: >-
+        Add a new order. We need to think about how this is called. an order
+        only needs to be created if one does not already exist but there is a
+        chance that two students could call this in some sort of race condition.
+      parameters:
+        - in: header
+          name: userid
+          required: true
+          schema:
+            type: string
+            example: '32432jkhlk3249e'
+        - in: header
+          name: centreid
+          required: true
+          schema:
+            type: string
+            example: '3242dssewrwer3e'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid Order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+        description: create a new order
+        required: true
+  /store/order/count:
+    get:
+      tags:
+        - store
+      summary: returns a count of orders
+      description: "get a count of orders based on the passed parameters"
+      operationId: getOrderCount
+      parameters: 
+        - in: query
+          name: centreId
+          required: true
+          description: the centre we want the orders for.
+          schema:
+            type: string
+            example: 5ce3c2d80e67a54e8fbefe74
+        - in: query
+          name: fromDate
+          description: >-
+            the from which we want to retrieve forward a particular schools
+            orders. example 2019-10-01
+          schema:
+            type: string
+            format: date
+            example: '2019-10-01'
+        - in: query
+          name: fulfillStatus
+          schema:
+            type: string
+            example: 'unfilfilled'
+        - in: query
+          name: userId
+          schema:
+            type: string
+            example: '23423432gsg324234'
+      responses:
+        '200':
+          description: 'count returned in body'
+          content:
+             application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 10
+  /store/order/{orderId}/{lineItemId}:
+    get:
+      tags:
+        - store
+      summary: Find lineItem by Id.
+      description: "get a single lineItem by Id from the parent Order"
+      operationId: getLineItemById
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order to return. 
+          example: 5cfe314591ae1d279a6961a1
+          required: true
+          schema:
+            type: string
+        - name: lineItemId
+          in: path
+          description: ID of lineItem to reurn 
+          example: 5cfe314591ae1d279a6961a1
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineItem'
+        '400':
+          description: Invalid IDs supplied
+        '404':
+          description: Order not found or LineItem not found
+    put:
+      tags: 
+        - store
+      summary: update the given  lineitem with the values in the body
+      operationId: updateLineItem
+      parameters: 
+        - in: path
+          name: orderId
+          required: true
+          description: the parent order id
+          schema:
+            type: string
+        - in: path
+          name: lineItemId
+          required: true
+          description: the related lineitem
+          schema:
+            type: string
+      requestBody:
+        description: an array of lineItems
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LineItem'
+      responses:
+        '200':
+          description: ok
+        '404': 
+          description: not found
+        '400': 
+          description: processing error
+    delete:
+      tags:
+        - store
+      summary: delete the line by given id
+      operationId: deleteLine
+      parameters: 
+        - in: path
+          name: orderId
+          required: true
+          description: unique id for order
+          schema:
+            type: string
+        - in: path
+          name: lineItemId
+          required: true
+          description: unique id for line in given order
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+        '400':
+          description: invalid operation
+  /store/order/{orderId}:
+    get:
+      tags:
+        - store
+      operationId: getOrderById
+      summary: 'return an order using its unique Id'
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          description: 'the unique id'
+          schema:
+            type: string
+            example: "324234ewrewrew34"
+      responses:
+        '200':
+          description: 'request completed ok' 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order' 
+        '400':
+          description: 'unexpected exception'
+    post:
+      tags: 
+        - store
+      operationId: addLines
+      summary: 'add an array of lines to a specific existing order. Not the same as the process api that takes the centreid and creates the order along with the line item. This is a simple system api call that will add a valid line to an existing order. As with the other paths there is little validation of data at this point.'
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          description: the parent order id
+          schema:
+            type: string
+      requestBody:
+        description: this is the list of line items that need to be removed from the order
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LineItem'
+      responses:
+        '201':
+          description: added lines ok. returns array of lineItem Ids that have been created.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '404': 
+          description: Order not found
+        '400': 
+          description: invalid operaation
+    put:
+      tags:
+        - store
+      operationId: adminOrderUpdate
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          description: the parent order id
+          schema:
+            type: string
+      requestBody:
+        description: this will accept a valid order object but only a limited set of attributes can be updated.
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/Order'
+      responses:
+        '200':
+          description: Update completed ok. returns related order object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: unauthorised
+        '404':
+          description: Order not found
+    delete:
+      tags:
+        - store
+      summary: delete the order if it exists, by Id
+      operationId: deleteOrder
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          description: the unique ID for the order
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+        '400':
+          description: invalid operation
+  /store/order/LineItem:
+    get:
+      tags:
+        - store
+      summary: get a lines various parameters
+      operationId: findLines
+      parameters:
+        - in: query
+          name: orderId
+          required: true
+          description: the parent order
+          schema:
+            type: string
+        - in: query
+          name: productTitle
+          required: false
+          description: string that is contained within a product title
+          schema:
+            type: string
+        - in: query
+          name: lastName
+          description: exact last name to be used in search
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: firstName
+          description: exact first name to be used in search
+          required: false
+          schema:
+            type: string  
+        - in: query
+          name: variantId
+          description: object id of the variant
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: studentId
+          description: object id of the related student document
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LineItem'
+        '400':
+          description: Invalid params supplied
+        '404':
+          description: Order not found or LineItem not found
+  /store/order/getCurrentForCentre:
+    get:
+      tags:
+        - store
+      summary: get the Current Open Order for a school if one exists
+      operationId: getCurrentForCentre
+      parameters:
+        - in: query
+          name: centreId
+          required: true
+          description: the centre we want the orders for. Example 5ce3c2d80e67a54e8fbefe74
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineItem'
+  /store/order/deleteItems:
+    put:
+      tags: 
+        - store
+      summary: deletes the items but also updates cabinet and user data to restock lizard points and cabinet shelves. A process api that SHOULD be using system apis
+      operationId: deleteItems
+      parameters:
+        - in: header
+          name: centreid
+          required: true
+          schema:
+            type: string
+            example: '234244srewewwewer4'
+        - in: header
+          name: userid
+          required: true
+          schema:
+            type: string
+            example: 'fdfsdfsfsddfsdf32432'
+      requestBody:
+        description: this is the list of line items that need to be removed from the order
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LineItem'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                example: 'successful operation'
+        '400':
+          description: bad operation.
+  /store/order/getMyItems:
+    get:
+      tags:
+        - store
+      summary: get a members order items
+      operationId: getMyItems
+      parameters:
+        - in: query
+          name: centreId
+          required: true
+          description: centre identifier
+          schema:
+            type: string
+        - in: query
+          name: userId
+          required: true
+          description: user Identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LineItem'
+  /cart/findByMemberId:
+    get:
+      tags:
+        - cart
+      summary: get the list of line items for this student.
+      description: >-
+        get the list of line items for this student from the current cart that
+        belong to this student if any exist
+      operationId: findByStudentId
+      parameters: 
+        - in: query
+          name: studentId
+          required: true
+          description: the student we want the lineitems for. Example *5ce65f0f0e67a54e8fbefe77*
+          schema:
+            type: string
+            example: 5d0933b37f0d711285cb515d
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LineItem'
+        '400':
+          description: >-
+            No current underlying order was found so no lineitems were found
+            either
+        '404':
+          description: No lineitems found
+  /cart:
+    post:
+      tags:
+        - cart
+      summary: Save these line items into a centre order.
+      description: >-
+        If there is a current order these items are added to it for the student.
+        If not a new order is created for the school and these line items are
+        added. We also validate that the student has enough points (would be
+        good if that was also applied at GUI) and we deduct this from the
+        students total. The updated values will be contained in the response
+        object
+      operationId: createNewCart
+      responses:
+        '201':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid lineItems
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                lineItems:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LineItem'
+        description: the current user AND an array of line items to be added to a school
+          order
+        required: true
+    put:
+      tags:
+        - cart
+      summary: update line items
+      description: amend the items of mine that belong to an open school order
+      operationId: updateCart
+      responses:
+        '200':
+          description: OK
+  /cabinet/{cabinetId}/reward:
+    get:
+      tags: 
+        - cabinet
+      summary: get an array of rewards from a given cabinet
+      operationId: getRewards
+      parameters: 
+        - in: path
+          name: cabinetId
+          required: true
+          schema:
+            type: string
+            example: asfdsadsad3q32423
+        - in: query
+          name: title
+          schema:
+            type: string
+            example: 'match attax'
+        - in: query
+          name: vendor
+          schema:
+            type: string
+            example: 'click'
+        - in: query
+          name: pointsUnder
+          schema:
+            type: integer
+            example: 100
+        - in: query
+          name: pointsOver
+          schema:
+            type: integer
+            example: 50
+        - in: query
+          name: countUnder
+          schema:
+            type: integer
+            example:
+        - in: query
+          name: countOver
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: returned array of rewards 
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Reward'
+        '404': 
+          description: not found
+        '400':
+          description: invalid operation
+  /cabinet/{cabinetId}/reward/{rewardId}:
+    parameters:
+        - in: path
+          name: cabinetId
+          required: true
+          schema:
+            type: string
+            example: werwerdsgsfbd34324q2
+        - in: path
+          name: rewardId
+          required: true
+          schema:
+            type: string
+            example: dkfjdsfjdsl324r5325
+    get:
+      tags:
+        - cabinet
+      summary: get related to a specific reward and the underlying product
+      operationId: getReward
+      description: This method gets all related data for a given reward and this will include shopify formatted data.
+      responses:
+        '200':
+          description: returns as much detail as possible including all nested docs
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Reward'
+        '404':
+          description: not found
+    post:
+      operationId: updateReward
+      tags:
+        - cabinet
+      summary: update the given reward if it exists. Can only update count
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Reward'
+      responses:
+        '200':
+          description: reward updted
+        '204':
+          description: nothing changed
+        '500':
+          description: unexpected exception
+  /reward/type:
+    get:
+      tags:
+        - admin
+        - cabinet
+      summary: get the basic definition of all reward types in the system
+      operationId: getRewardTypes
+      description: >-
+        Initially this is likely to be a very simple set of data but could grow
+        as we work out what features for each reward type we need to expose for
+        users to maintain.
+      parameters:
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: a simple list of reward types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardType'
+                example:
+                  - id: 45430584509435098435093jiojojojji
+                    name: GLR Shop
+                    description: >-
+                      This defines the rules for the GLR shop rewards that are
+                      available to a given school
+                  - id: gfdgdfgdfgfdgdfd346345gdfhdhf
+                    name: School Physical Reward
+                    description: >-
+                      These are physical rewards that are handed out at school
+                      but not sourced from GLR Shop directly
+                  - id: poertierpotirepoteri4543534
+                    name: Reward Cards
+                    description: ewdfdfsdfdsfdfs
+                  - id: ertirepotireiop43543534
+                    name: School Virtual Reward
+                    description: rgjfdlkgjdflkjerlkert
+        '401':
+          description: Not authorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No API key found in request
+                    default: No API key found in request
+        '404':
+          description: returned by the kong gateway if the route provided cannot be found
+        '502':
+          description: bad gateway - issue with gateway talking to upstream service.
+    post:
+      tags:
+        - cabinet
+        - admin
+      summary: Add a new reward type. only accessible to GLR admins
+      operationId: addRewardType
+      requestBody:
+        description: Enough detail to create a new type
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardType'
+        required: true
+      responses:
+        '201':
+          description: Reward Created
+          content:
+            application/json:
+             schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardType'
+        '400':
+          description: Invalid Object
+        '401':
+          description: Unauthorised
+    put:
+      tags:
+        - cabinet
+        - admin
+      summary: update a new reward type. only accessible to GLR admins. 
+      operationId: updateRewardType
+      requestBody:
+        description: Must provide a valid ID
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardType'
+        required: true
+      responses:
+        '200':
+          description: Reward updated
+          content:
+            application/json:
+             schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardType'
+        '400':
+          description: Invalid Object
+        '401':
+          description: Unauthorised
+    delete:
+      tags:
+        - cabinet
+        - admin
+      summary: delete a reward type
+      operationId: deleteType
+      parameters:
+        - in: query
+          name: typeIds
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+            example: 
+               - 'wqerewrewrwerwerwerr'
+               - 'dsfdsfsdfdsfdsfdf'
+      responses:
+        '200':
+          description: Item Deleted
+        '401':
+          description: Unauthorised
+        '404':
+          description: Not found
+  /reward/template:
+    get:
+      tags:
+        - admin
+        - cabinet
+      operationId: getTemplates
+      summary: use this to get the active reward templates for a learning centre
+      description: >-
+        As each learning centre can create decide which types and templates it
+        wishes to use this route can be used to return any or all of the reward
+        types based on a simple name or value search
+      parameters:
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/limitParam'
+        - in: query
+          name: pointsAbove
+          required: false
+          schema:
+            type: integer
+            example: 100
+          description: search for items with a point value above this ammount
+        - in: query
+          name: pointsBelow
+          required: false
+          schema:
+            type: integer
+            example: 1000
+          description: search for items with a point value below this ammount
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+            example: amazon
+          description: >-
+            a case insensitve string that will be used to search reward template
+            names
+      responses:
+        '200':
+          description: a simple list of reward templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardTemplate'
+        '401':
+          description: Not authorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No API key found in request
+                    default: No API key found in request
+        '404':
+          description: returned by the kong gateway if the route provided cannot be found
+        '502':
+          description: bad gateway - issue with gateway talking to upstream service.
+    post:
+      tags:
+        - admin
+        - cabinet
+      summary: create a new reward template
+      operationId: addTemplate
+      requestBody:
+        description: A reward template object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardTemplate'
+      responses:
+        '201':
+          description: >-
+            Created response. Will include the full definition including the
+            newly created Id.
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardTemplate'
+        '401':
+          description: Unauthorised
+        '400':
+          description: Bad Request
+    put:
+      tags:
+        - admin
+        - cabinet
+      summary: update a reward template
+      operationId: updateTemplate
+      requestBody:
+        description: A reward template object including the id that needs to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardTemplate'
+      responses:
+        '200':
+          description: Accepted. Response Will include the full definition.
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/RewardTemplate'
+        '401':
+          description: Unauthorised
+        '404':
+          description: Not found  
+    delete:
+      tags:
+        - admin
+        - cabinet
+      summary: delete templete
+      operationId: deleteTemplate
+      parameters:
+        - in: query
+          name: templateId
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+              example:
+                - 'sdfdsfsdfdsfdsf'
+                - 'sdfdsfdsfsdfdsf'
+      responses:
+        '200':
+          description: Item deleted
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorised
+  /reward/issuer:
+    summary: Organisation that issues the rewards
+  /cabinet:
+    summary: this route provides EL centric operations for interacting with rewards
+    description: A cabinet is owned by a learning centre.
+    get:
+      tags:
+        - cabinet
+      operationId: getCabinet
+      parameters:
+        - in: query
+          name: centre
+          schema:
+            type: string
+            example: '5e8e67ed1c9d440000858579'
+        - in: query
+          name: summary
+          schema:
+            type: boolean
+            example: false
+      responses:
+        '200':
+          description: OK - cabinet found
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Cabinet'
+        '401':
+          description: >-
+            Only peole associated with the centre can view the centres cabinet.
+            Admins can also view a cabinet for any centre.
+        '404':
+          description: Not Found - No Cabinet found for the learning centre
+    post:
+      tags:
+        - cabinet
+        - admin
+      operationId: addCabinet
+      summary: Create a new Cabinet for a learning centre. 
+      description: This will only permit one active cabinet. Delete an existing cabinet if you wish to replace one.
+      requestBody:
+        description: Enough detail to create a new cabinet
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Cabinet'
+        required: true
+      responses:
+        '201':
+          description: Cabinet Created
+          content:
+            application/json:
+             schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Cabinet'
+        '400':
+          description: Invalid Object
+        '401':
+          description: Unauthorised
+    put:
+      tags:
+        - cabinet
+      summary: update a cabinet definition
+      operationId: updateCabinet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Cabinet'          
+      responses:
+        '200':
+          description: Cabinet Updated
+          content:
+            application/json:
+             schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Cabinet'
+        '400':
+          description: Invalid Object 
+        '401':
+          description: Unauthorised 
+    delete:
+      tags:
+        - cabinet        
+      summary: delete a cabinet definition. 
+      description: Will also delete related shelves. THIS CANNOT BE UNDONE!
+      operationId: deleteCabinet
+      parameters: 
+        - in: query
+          name: cabinetId
+          required: true
+          schema:
+            type: string
+            example: 'EL_CAB123'
+      responses:
+        '200':
+          description: Deleted
+        '401':
+          description: Unauthorised
+        '404':
+          description: Not found
+  /cabinet/{cabinetId}/shelf/{shelfId}:
+    summary: this route provides EL centric operations for interacting with rewards
+    description: a shelf is a set of items that have the same lizard points values.
+    get: 
+      tags:
+        - cabinet
+      operationId: getShelf
+      parameters:
+        - name: cabinetId
+          in: path
+          description: ID of cabinet for which we want the shelves.
+          required: true
+          schema:
+            type: string
+            example: 'EL_CAB_1234'
+        - name: shelfId
+          in: path
+          required: true
+          description: the unique ID for a specific Cabinet shelf
+          schema: 
+            type: string
+            example: '4324dgdfgdfgdfggdfg3'
+        - name: name
+          in: query
+          description: used to search the shelves names for anything containing the provided value
+          schema:
+            type: string
+            example: '200 Shelf'
+      responses:
+        '200':
+          description: shelves were found and returned for the cabinet
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Shelf'
+        '404':
+          description: no shelves were found for the cabinet or with the parameters provided
+        '401':
+          description: Not authorised
+    post:
+      tags:
+        - cabinet
+      operationId: updateShelf
+      parameters:
+        - name: cabinetId
+          in: path
+          description: ID of cabinet for which we want the shelves.
+          required: true
+          schema:
+            type: string
+            example: 'EL_CAB_1234'
+        - name: shelfId
+          in: path
+          required: true
+          description: the unique ID for a specific Cabinet shelf
+          schema: 
+            type: string
+            example: '4324dgdfgdfgdfggdfg3'
+      requestBody:
+        description: Enough detail to create a new shelf
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Shelf'
+        required: true
+      
+      responses:
+        '200':
+          description: shelf updated
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Shelf'
+        '204':
+          description: nothing changed
+        '500':
+          description: unexpected exception
+    delete:
+      tags:
+        - cabinet    
+      operationId: deleteShelf
+      parameters:
+        - name: cabinetId
+          in: path
+          description: ID of cabinet for which we want the shelves.
+          required: true
+          schema:
+            type: string
+            example: 'EL_CAB_1234'
+        - name: shelfId
+          in: path
+          required: true
+          description: the unique ID for a specific Cabinet shelf
+          schema: 
+            type: string
+            example: '4324dgdfgdfgdfggdfg3'
+      responses:
+        '200':
+          description: item deleted
+        '404': 
+          description: item not found
+        '500':
+          description: unexpected error
+    
+  /cabinet/{cabinetId}/shelf/{shelfId}/reward/add:
+    summary: add rewards to a given shelf
+    description: this will add rewards but will NOT check if the reward is unique. The same items could therefore be added to different shelves. It Will check that the name is unique within the given shelf.
+    parameters:
+      - in: path
+        name: cabinetId
+        required: true
+        schema:
+          type: string
+          example: sdfdsfdsf234234324
+      - in: path
+        name: shelfId
+        required: true
+        schema:
+          type: string
+          example: fsdfsdfewsdfssdfsfsdf
+    post:
+      operationId: addRewardsToShelf
+      tags:
+        - cabinet
+      requestBody:
+        description: array of rewards
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Reward'
+        required: true
+      responses:
+        '201':
+          description: rewards added
+        '406':
+          description: not acceptable - likely trying to add reward of same name as existing reward on the specified shelf.
+  /cabinet/{cabinetId}/shelf/{shelfId}/reward/{rewardId}:
+    summary: methods for working with rewards on specific shelves
+    parameters:
+      - in: path
+        name: cabinetId
+        required: true
+        schema:
+          type: string
+          example: sdfdsfdsf234234324
+      - in: path
+        name: shelfId
+        required: true
+        schema:
+          type: string
+          example: fsdfsdfewsdfssdfsfsdf
+      - in: path
+        name: rewardId
+        required: true
+        schema:
+          type: string
+          example: vbnvbnvbn567567ghfhfg
+    post:
+      operationId: updateRewardByShelf
+      tags:
+        - cabinet
+      summary: update the given reward if it exists. Can only update count
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Reward'
+      responses:
+        '200':
+          description: reward updted
+        '204':
+          description: nothing changed
+        '500':
+          description: unexpected exception
+    delete:
+      operationId: deleteReward
+      tags:
+        - cabinet
+      summary: delete the reward from the shelf if it exists
+      responses:
+        '200':
+          description: reward deleted
+        '401':
+          description: not authorised
+        '404':
+          description: not found 
+components:
+  securitySchemes:
+      ApiKeyAuth:        # arbitrary name for the security scheme
+       type: apiKey
+       in: header       # can be "header", "query" or "cookie"
+       name: X-API-KEY  # name of the header, query parameter or cookie
+      APIKeyQueryParam:
+        type: apiKey
+        in: query
+        name: wh_key
+  parameters:
+    X-EL-CENTRE-ID:
+      in: header
+      name: X-EL-CENTRE-ID
+      required: true
+      schema:
+        type: string
+        example: EL-12234
+    X-Consumer-Username:
+      in: header
+      name: X-Consumer-Username
+      required: true
+      schema:
+        type: string
+        example: GLR4S-ADMINS-DEV
+      description: Contains the username from Kong Gateway
+    offsetParam:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+      description: The number of items to skip before starting to collect the result set.
+    limitParam:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+      description: The numbers of items to return.
+    cabinetId:
+      in: query
+      name: cabinetId
+      required: true
+      schema:
+        type: string
+        example: 'EL_CAB_1234'
+  schemas:
+  #experience api schemas
+    Menu:
+      type: object
+      required: 
+        - name
+      properties:
+        name:
+          type: string
+          example: Toys & Games
+        link: 
+          type: string
+          format: uri
+          example: /collections/toys-and-games
+        menuItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/Menu'
+          example:
+            - name: Pocket Money Toys
+              link: /collections/pocket-money-toys
+    Container:
+      type: object
+      description: A collection of members 
+      properties:
+        _id:
+          type: string
+          example: e3242erewrrewwer
+        name:
+          type: string
+          example: tutor group test
+        code:
+          type: string
+          example: TTG1
+        type:
+          type: string
+          example: tutor group
+        _learningCentreId:
+          type: string
+          example: ssssssssssssaaaaa
+        ownerName: 
+          type: string
+          example: Joe Bloggs
+        owners:
+          type: array
+          items: 
+            type: string
+            example: ['sdfdsfdsfdsdsfdfsdd','werewrewrewrwererw']
+        members:
+          type: array
+          items:
+            type: string
+            example: ['ewrewr32432432424', 'as34324234234324']
+  #process and system api schemas
+    Order:
+      properties:
+        _id:
+          type: string
+          example: 5cfe314591ae1d279a6961a1
+        finStatus:
+          type: string
+          enum:
+            - paid
+            - unpaid
+            - invoiced
+          example: unpaid
+        fulfillStatus:
+          type: string
+          enum:
+            - fulfilled
+            - unfulfilled
+            - fulfilling
+          example: fulfilled
+        _learningCentrelId:
+          type: string
+          example: 5ce3c2d80e67a54e8fbefe74
+        lineItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+        orderTotal:
+          type: number
+          example: 500.01
+        taxTotal:
+          type: number
+          example: 100.01
+        dateReceived:
+          type: string
+          format: date
+          example: '2019-06-10'
+        dateUpdated:
+          type: string
+          format: date
+          example: '2019-06-10'
+        dateFulfilled:
+          type: string
+          format: date
+          example: '2019-26-10'
+        img:
+          type: string
+          format: url
+          example: 'https://cdn.shopify.com/s/files/1/0039/1633/3123/products/RBAS.jpg?v=1551869506'
+    LineItem:
+      properties:
+        _id:
+          type: string
+          example: 5cfe314591ae1d279a6961a3
+        _rewardId:
+          description: this holds a shopify GUID
+          type: string
+          example: '5e9861217c36460bb0137d7a'
+        productTitle:
+          type: string
+          example: '''Bananas for Books'' Bookmarks - 36 Bookmarks'
+        variantId:
+          description: 'this is the critical attribute we allways purchase a variant even if it is the default variant.'
+          type: string
+          example: 'gid://shopify/ProductVariant/18919054671939'
+        quantity:
+          type: number
+          example: 1
+        glrpoints:
+          type: number
+          example: 400
+        student:
+          description: this should be studentId but a refactor is need to fix
+          type: string
+          example: 5ce65f0f0e67a54e8fbefe77
+        memberFirstName:
+          type: string
+          example: 'John'
+        memberLastName:
+          type: string
+          example: 'Smith'
+    User:
+      properties:
+        Id:
+          type: string
+          example: 5cd1b33cf37e6d3f87b178ed
+        password:
+          type: string
+          format: password
+        ELId:
+          type: string
+          example: 'elidexample'
+        firstName:
+          type: string
+          example: Sarah
+        lastName:
+          type: string
+          example: Smith
+        userName:
+          type: string
+          example: ssmith
+        currentPoints:
+          type: number
+          example: 200
+        centreId:
+          type: string
+          example: 5e8e67ed1c9d440000858579
+        favourites:
+          type: array
+          items:
+            $ref: '#/components/schemas/Favourite'
+    Favourite:
+      properties:
+        _id:
+          type: string
+          example: wqewqreqwe342423423134
+        _shopifyProductId:
+          type: string
+          example: asdsadsadsadsd
+security:
+  - ApiKeyAuth: []
+# Added by API Auto Mocking Plugin
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/Copper-Beech/GLR4Explore/2.5.2
+  - description: using api gateway
+    url: http://glr-kong.herokuapp.com/glr/api/glr4s
