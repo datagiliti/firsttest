@@ -52,6 +52,9 @@ paths:
           type: integer
           example: 50
     get: 
+      operationId: getProducts
+      tags:
+        - product
       responses:
         '200':
           description: 'paginated array of product details'
@@ -74,6 +77,7 @@ paths:
           type: number
           example: 123213213333
     get:
+      operationId: getProduct
       tags:
         - product
       summary: get the product details including all variant details
@@ -90,6 +94,7 @@ paths:
           description: not found
   /login:
     post:
+      
       tags:
         - user
       summary: implement a basic uid and password requestion
@@ -112,6 +117,7 @@ paths:
           type: string
           example: 'url/hook/test'
     post:
+      operationId: productRefresh
       security: 
         - ApiKeyAuth: []
         - APIKeyQueryParam: []
@@ -622,7 +628,6 @@ paths:
           schema:
             type: string
             format: date
-            example: '2019-10-01'
         - in: query
           name: fulfillStatus
           schema:
@@ -730,7 +735,6 @@ paths:
           schema:
             type: string
             format: date
-            example: '2019-10-01'
         - in: query
           name: fulfillStatus
           schema:
@@ -1952,15 +1956,12 @@ components:
         dateReceived:
           type: string
           format: date
-          example: '2019-06-10'
         dateUpdated:
           type: string
           format: date
-          example: '2019-06-10'
         dateFulfilled:
           type: string
           format: date
-          example: '2019-26-10'
         img:
           type: string
           format: url
