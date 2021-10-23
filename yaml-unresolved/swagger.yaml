@@ -10,14 +10,17 @@ info:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
+  - name: report
+    description: "all aggregated reports"
+  - name: centre
+    description: 'a learning centre, school or similar location'
   - name: product
     description: a clone of the shopify product data
   - name: webhook
     description: backend processing calls
-  - name: centre
-    description: Basic School info including logo url if available
   - name: store
     description: Access to the glr4s store
+  - name: 'draft order'
   - name: cabinet
   - name: cart
     description: >-
@@ -28,7 +31,146 @@ tags:
     description: 'any tag starting with the word process implies there is complex logic. This is distinct and seprate from the base system api functions. In this case anything tagged processOrder will include some complex process interaction with other APIS eg user rewards points or a related cabinet'
   - name: container
     description: 'A generic flexible method for grouping users. A container has a single owner and many members. Containers can contain containers. Eg a learning centre is a container owned by a manager but within this there might be a tutor group of members and teachers with an owner/lead'
+  - name: issuer
+    description: 'the issuer of rewards. examples might be amazon for cards or GLR'
+  - name: invoice
+    description: "create or retrieve invoices for related draft orders"
 paths:
+  /reports/order/totals:
+    get:
+      tags:
+        - reports
+      summary: "returns an object containing a variety of aggregation results"
+      operationId: getOrderTotals
+      parameters:
+        - $ref: "https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreNameParam"
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreStatusParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
+      responses:
+        '200':
+          description: "returns a summary object of the total amount and count of orders"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalAmount:
+                    type: number
+                    example: 23000.00
+                  totalCount:
+                    type: integer
+                    example: 200
+        '400':
+          description: "unexpected error"
+        '401':
+          description: "unauthorised"
+  /centres/{centreId}:
+    parameters:
+      - in: path
+        name: centreId
+        required: true
+        schema:
+          type: integer
+          example: 234234234234
+    get:
+      tags:
+        - centre
+        - admin
+      operationId: getCentre
+      responses:
+        '200':
+          description: 'returns an object of type centre if found'
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/LearningCentre'
+        '404':
+          description: 'the requested cenre was not found'
+        '401':
+          description: 'unauthorised'
+    post:
+      tags:
+        - centre
+        - admin
+      operationId: updateCentre
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/LearningCentre'
+      responses:
+        '200':
+          description: 'returns ok'
+        '404':
+          description: 'centre not found'
+        '401': 
+          description: 'unauthorised'
+        '400': 
+          description: 'unexpected error'
+    delete:
+      tags:
+        - admin
+        - centre
+      operationId: deleteCentre
+      responses:
+        '200':
+          description: 'returns ok'
+        '404':
+          description: 'centre not found'
+        '401': 
+          description: 'unauthorised'
+        '400': 
+          description: 'unexpected error'
+  /centres/shopify/{shopifyId}:
+    parameters:
+      - in: path
+        name: shopifyId
+        required: true
+        schema:
+          type: integer
+          example: 123456677
+    get:
+      tags:
+        - centre
+      operationId: getCentreByShopifyId
+      responses:
+        '200':
+          description: 'single centre object for unique shopify Id'
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/LearningCentre'
+        '404':
+          description: 'the requested cenre was not found'
+        '401':
+          description: 'unauthorised'
+  /centres:
+    parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+          example: 'Walton'
+      - in: query
+        name: size
+        schema:
+          type: string
+          example: 'S'
+    get:
+      tags:
+        - centre
+        - admin
+      operationId: getCentres
+      responses:
+        '200':
+          description: returns object if found
+          content:
+           application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/LearningCentre'
   /product:
     parameters:
       - in: query
@@ -51,6 +193,33 @@ paths:
         schema: 
           type: integer
           example: 50
+      - in: query
+        name: variantId
+        schema:
+          type: integer
+          example: 123456789
+      - in: query
+        name: tags
+        schema:
+          type: string
+          example: "tangle"
+      - in: query
+        name: bold_price
+        schema:
+          type: number
+          example: 12.34
+      - in: query 
+        name: totalVariantQuantity
+        schema:
+          type: number
+          example: 20
+      - in: query
+        name: includeDeleted
+        schema:
+          type: boolean
+          example: false
+      - $ref: '#/components/parameters/offsetParam'
+      - $ref: '#/components/parameters/limitParam'
     get: 
       operationId: getProducts
       tags:
@@ -68,6 +237,70 @@ paths:
           description: 'not found'
         '401':
           description: unauthorised
+  /product/count:
+    parameters:
+      - in: query
+        name: title
+        schema:
+          type: string
+          example: 'Lego'
+      - in: query
+        name: vendor
+        schema:
+          type: string
+          example: 'tangle'
+      - in: query
+        name: pointsUnder
+        schema:
+          type: integer
+          example: 200
+      - in: query
+        name: pointsOver
+        schema: 
+          type: integer
+          example: 50
+      - in: query
+        name: variantId
+        schema:
+          type: integer
+          example: 123456789
+      - in: query
+        name: tags
+        schema:
+          type: string
+          example: "tangle"
+      - in: query
+        name: bold_price
+        schema:
+          type: number
+          example: 12.34
+      - in: query 
+        name: totalVariantQuantity
+        schema:
+          type: number
+          example: 20
+      - in: query
+        name: includeDeleted
+        schema:
+          type: boolean
+          example: false
+    get:
+      tags:
+        - product
+      operationId: getProductCount
+      responses:
+        '200':
+          description: 'returns a count of objects matching the request parameters'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 20
+        '400':
+          description: 'unexpected error'
   /product/{product_id}:
     parameters:
       - in: path
@@ -92,6 +325,133 @@ paths:
           description: unauthorised
         '404':
           description: not found
+  /product/variant/{variantId}:
+    parameters:
+      - in: path
+        name: variantId
+        required: true
+        schema:
+          type: integer
+          example: 23432432432432
+    get:
+      tags: 
+        - product
+      summary: 'returns a single product if a product is found with that variant id'
+      operationId: getProductByVariant
+      responses:
+        '200':
+          description: 'returns the first product found containing that variant Id'
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Product'
+        '404':
+          description: 'no product found'
+        '401':
+          description: 'unauthorised'
+        '400':
+          description: 'unexpected error'
+  /product/variant/{variantId}/points:
+    parameters:
+      - in: path
+        name: variantId
+        required: true
+        schema:
+          type: integer
+          example: 23432432432432
+    get:
+      tags: 
+        - product
+      summary: 'returns a single product if a product is found with that variant id'
+      operationId: getProductPointsByVariant
+      responses:
+        '200':
+          description: 'returns the first product found containing that variant Id'
+          content:
+            application/json:
+              schema:
+                type: integer
+                example: 100
+        '404':
+          description: 'no product found'
+        '401':
+          description: 'unauthorised'
+        '400':
+          description: 'unexpected error'
+  /invoice/aggregate:
+    post:
+      operationId: postInvoiceAggregate
+      tags:
+        - invoice
+      summary: "groups the draft orders based on the provided filter and then generates a single invoice to coer the set of draft orders."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "August Medium"
+      responses: 
+        '201':
+          description: "returns the created invoice"
+          content:
+           application/json:
+            schema:
+             $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Invoice'
+        '401':
+          description: "unauthorised"
+        '400':
+          description: "unexpected error"
+        '404':
+          description: "no matching draft orders found"
+  /invoice:
+    get:
+      tags:
+        - invoice
+      operationId: getInvoices
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          example: 'august mid'
+      responses:
+        '200':
+          description: "returns array of matching invoices"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                    $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Invoice' 
+        '400':
+          description: "unepected error"
+        '404':
+          description: "no invoices found"
+        '401':
+          description: "unauthorised"
+  /invoice/{invoiceId}:
+    parameters:
+      - in: path
+        name: invoiceId
+        required: true
+        schema:
+          type: string
+          example: "ewrwe543543534"
+    get:
+      operationId: getInvoiceById
+      tags:
+        - invoice
+      summary: "returns the invoice object if found"
+      responses:
+        '200':
+          description: "returns the invoice object if found"
+          content:
+            application/json:
+              schema:
+               $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Invoice' 
   /login:
     post:
       
@@ -107,7 +467,39 @@ paths:
                 $ref: '#/components/schemas/User'
         '401':
           description: Invalid user
-  /webhook/produdctRefresh:
+  /webhook/productOnlyRefresh:
+    summary: 'this refresh will not refresh metafields but will call shopify to get a new product object to upsert'
+    parameters:
+      - in: query
+        name: hook
+        required: true
+        schema:
+          type: string
+          example: 'url/hook/test'
+    post:
+      operationId: productOnlyRefresh
+      security: 
+        - ApiKeyAuth: []
+        - APIKeyQueryParam: []
+      tags: 
+        - webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/RefreshFilter'
+      responses:
+        '200':
+          description: 'trigger a full refresh of product meta and inventory data'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productsUpdated: 
+                    type: number
+                    example: 1000
+  /webhook/productRefresh:
     summary: 'trigger backend process to update all products with refreshed metafields and inventory'
     parameters:
       - in: query
@@ -123,6 +515,11 @@ paths:
         - APIKeyQueryParam: []
       tags: 
         - webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/RefreshFilter'
       responses:
         '200':
           description: 'trigger a full refresh of product meta and inventory data'
@@ -509,6 +906,32 @@ paths:
           description: bad request
         '401':
           description: unuthorised
+  /users/{userId}/creds:
+    put:
+      tags:
+        - user
+      summary: set credentials
+      operationId: setCredentials
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          description: a user id
+          schema:
+            type: string
+            example: 'erwe234ewrewr234'
+      requestBody:
+        description: 'credentials schema'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+        required: true
+      responses:
+        '200':
+          description: 'password updated'
+        '400':
+          description: ' unexpected error'
   /users/{userId}/favourites:
     get:
       tags:
@@ -583,6 +1006,250 @@ paths:
           description: invalid operation
         '404':
           description: not found
+  /store/draftorder:
+    get:
+      operationId: getDraftOrders
+      summary: returns an array of draft orders
+      tags:
+        - 'draft order'
+      parameters:
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreNameParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreStatusParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreNotesParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/shopifyIdParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreIdParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#//components/parameters/offsetParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#//components/parameters/limitParam'
+      responses:
+        '200':
+          description: ok
+          headers:
+            x-glr-limit:
+              schema:
+                type: integer
+                example: 5
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref:  '#/components/schemas/DraftOrder'
+        '404':
+          description: nothing found
+    post:
+      operationId: addDraftOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftOrder'
+        description: 'fields to be added or amended'
+        required: true
+      tags:
+        - 'draft order'
+      responses:
+        '201':
+          description: created ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftOrder'
+        '401':
+          description: unauthorised
+        '400':
+          description: invalid operation
+  /store/draftorder/count:
+     get:
+      operationId: getDraftOrdersCount
+      summary: returns an integer count of items that match the query
+      tags:
+        - 'draft order'
+      parameters:
+        - in: query
+          name: name
+          description: " exact text including case " 
+          schema:
+            type: string
+            example: "XL Centres"
+        - in: query
+          name: status
+          description: 'a string of a valid status type. draft, expired or open'
+          schema:
+            type: string
+            example: open
+        - in: query
+          name: targetDate
+          description: 'a date. will return all draft orders that are more recent that this date'
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: centreType
+          description: 'One of small, medium or large'
+          schema:
+            type: string
+            enum: ['small', 'medium', 'large']
+        - in: query
+          name: notes
+          description: 'wildcard search of the order notes'
+          schema:
+            type: string
+            example: 'some text'
+        - in: query
+          name: shopifyId
+          schema:
+            type: integer
+            example: 12355435646
+        - in: query
+          name: centreId
+          schema:
+            type: string
+            example: '999werewrw9e99'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: integer
+                example: 10
+        '404':
+          description: nothing found
+  /store/draftorder/{draft_order_id}:
+    parameters:
+      - in: path
+        required: true
+        name: draft_order_id
+        schema:
+          type: string
+          example: '234234ewfsdfdss32'
+    get:
+      tags:
+       - 'draft order'
+      operationId: getDraftOrder
+      responses:
+        '200':
+          description: returns the object if found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftOrder'
+    put:
+      operationId: updateDraftOrder
+      tags:
+        - 'draft order'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftOrder'
+        description: 'fields to be added or amended'
+        required: true
+      responses:
+        '200':
+          description: updated ok
+          
+        '401':
+          description: unauthorised
+        '404':
+          description: draft order not found
+    delete:
+      tags: 
+        - 'draft order'
+      operationId: deleteDraftOrder
+      responses:
+        '200':
+          description: deleted ok
+        '401':
+          description: unauthorised
+        '404':
+          description: draft order not found
+  /store/draftorder/{draft_order_id}/clone/{centreId}:
+    parameters:
+      - in: path
+        name: draft_order_id
+        required: true
+        schema:
+          type: string
+          example: '23423rewrwe32423'
+      - in: path
+        name: centreId
+        required: true
+        schema:
+          type: string
+          example: 'werwer234234erwrewr'
+    post:
+      tags:
+        - 'draft order'
+      operationId: cloneDraftOrderForCentre
+      responses:
+        '200':
+          description: returns the new cloned draft order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftOrder'
+  /store/process/draftorder/{draft_order_id}/refresh:
+    post:
+      tags:
+       - 'draft order'
+      operationId: refreshFromShopify
+      parameters: 
+        - in: path
+          name: draft_order_id
+          required: true
+          schema:
+            type: string
+            example: 'erwer23423423'
+      responses:
+        '200':
+          description: refreshed ok
+        '404':
+          description: not found
+        '401':
+          description: unauthorised
+        '400':
+          description: unexpected error
+  /store/process/draftorder/{draft_order_id}/send:
+    parameters:
+      - in: path
+        name: draft_order_id
+        required: true
+        schema:
+          type: string
+          example: 'ewrw23432423rewr234'
+    post:
+      tags:
+        - 'draft order'
+      operationId: sendDraftOrder
+      responses:
+        '200':
+          description: 'sends the draft to shopify and changes status to sent'
+        '400':
+          description: 'unexpected error'
+        '404':
+          description: 'draft order not found'
+  /store/process/draftorder/{draft_order_id}/complete:
+    parameters:
+      - in: path
+        name: draft_order_id
+        required: true
+        schema:
+          type: string
+          example: 'ewrw23432423rewr234'
+    post:
+      tags:
+        - 'draft order'
+      operationId: completeDraftOrder
+      responses:
+        '200':
+          description: 'complete the draft order in shopify and change status to complete'
+        '400':
+          description: 'unexpected error'
+        '404':
+          description: 'draft order not found'
   /store/process/order/{orderId}:
     delete:
       operationId: processDeleteOrder
@@ -665,9 +1332,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/Order'
-          application/xml:
             schema:
               $ref: '#/components/schemas/Order'
         description: Order object that needs to be added to the store
@@ -1626,6 +2290,39 @@ paths:
           description: Unauthorised
         '404':
           description: Not found
+  /cabinet/shelf:
+    summary: "get shelf data"
+    get:
+      tags:
+        - cabinet
+      operationId: getShelfByName
+      parameters:
+        - name: cabinetId
+          in: query
+          description: ID of cabinet for which we want the shelves.
+          required: true
+          schema:
+            type: string
+            example: 'EL_CAB_1234'
+        - name: name
+          in: query
+          description: used to search the shelves names for anything containing the provided value
+          schema:
+            type: string
+            example: '200 Shelf'
+      responses:
+        '200':
+          description: shelves were found and returned for the cabinet
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Shelf'
+        '404':
+          description: no shelves were found for the cabinet or with the parameters provided
+        '401':
+          description: Not authorised
   /cabinet/{cabinetId}/shelf/{shelfId}:
     summary: this route provides EL centric operations for interacting with rewards
     description: a shelf is a set of items that have the same lizard points values.
@@ -1648,12 +2345,6 @@ paths:
           schema: 
             type: string
             example: '4324dgdfgdfgdfggdfg3'
-        - name: name
-          in: query
-          description: used to search the shelves names for anything containing the provided value
-          schema:
-            type: string
-            example: '200 Shelf'
       responses:
         '200':
           description: shelves were found and returned for the cabinet
@@ -1816,6 +2507,32 @@ paths:
           description: not authorised
         '404':
           description: not found 
+  /issuer:
+    get:
+      tags:
+        - issuer
+      operationId: getIssuerByName
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+            example: 'Great Little Rewards'
+          required: true
+      responses:
+        '200':
+          description: 'issuer object'
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Issuer'
+        '401':
+          description: 'not authorised'
+        '404':
+          description: 'not found' 
+        '400':
+          description: 'unexpected error'
+      
 components:
   securitySchemes:
       ApiKeyAuth:        # arbitrary name for the security scheme
@@ -1921,6 +2638,46 @@ components:
             type: string
             example: ['ewrewr32432432424', 'as34324234234324']
   #process and system api schemas
+    DraftOrder:
+      properties:
+        _id: 
+          type: string
+          example: 'weerewr3454354353'
+        targetDate: 
+          type: string
+          format: date-time
+        status: 
+          type: string 
+          enum: 
+            - 'draft'
+            - 'expired'
+            - 'open'
+            - 'sent'
+            - 'cloned'
+            - 'completed'
+        name:
+          type: string
+          example: 'test template'
+        note: 
+          type: string
+          example: 'example note'
+        totalPoints: 
+          type: integer
+          example: 2000
+        maxTotal: 
+          type: number
+          example: 200.00
+        centreType: 
+          type: string
+          enum:
+            - 'small'
+            - 'medium'
+            - 'large'
+        _linkedCabinetId:
+          type: string
+          example: 'cabinetid'
+        shopifyDraftOrder: 
+          type: object
     Order:
       properties:
         _id:
@@ -2036,6 +2793,36 @@ components:
         _shopifyProductId:
           type: string
           example: asdsadsadsadsd
+    Credentials:
+      type: object
+      description: 'used to update pwd etc'
+      properties:
+        oldPwd:
+          type: string
+          format: password
+        newPwd:
+          type: string
+          format: password
+        confirmPwd: 
+          type: string
+          format: password
+  #webhook filters
+    RefreshFilter:
+      type: object
+      description: used to limit the refresh of shopify prodcuts
+      properties:
+        points:
+          type: integer
+          example: 25
+        product_type: 
+          type: string
+          example: 'Toys and Games'
+        updated_at:
+          type: string
+          format: date
+          example: '2021-08-03'
+          
+  
 security:
   - ApiKeyAuth: []
 # Added by API Auto Mocking Plugin
