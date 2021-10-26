@@ -36,15 +36,63 @@ tags:
   - name: invoice
     description: "create or retrieve invoices for related draft orders"
 paths:
-  /reports/order/totals:
+  /reports/draftorder/ranked/centres:
+    summary: "list the centres in order of spend month to date"
+    get:
+      tags:
+        - reports
+      operationId: getMTDRankedCentres
+      parameters:
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
+      responses:
+        '200':
+          description: "returns an array of centre names with total amount in spend order"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: 
+                    type: string
+                    example: "Bristol"
+                  totalAmount:
+                    type: number
+                    example: 515.34
+        '400':
+          description: "unexpected error"
+        '401':
+          description: "unauthorised"
+  /reports/draftorder/mtd/totals:
+    summary: "get the month to date totals and the previous months totals to the same period in that previous month. Also returns % increase or decrease"
+    parameters:
+      - $ref: "https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNameParam"
+      - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderStatusParam'
+      - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
+      - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
+    get:
+      tags:
+        - reports
+      operationId: getMTDTotals
+      responses:
+        '200':
+          description: "returns a summary object"
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/ReportMTDObject'
+        '400':
+          description: "unexpected error"
+        '401':
+          description: "unauthorised"
+  /reports/draftorder/totals:
     get:
       tags:
         - reports
       summary: "returns an object containing a variety of aggregation results"
       operationId: getOrderTotals
       parameters:
-        - $ref: "https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreNameParam"
-        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreStatusParam'
+        - $ref: "https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNameParam"
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderStatusParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
       responses:
@@ -1013,15 +1061,15 @@ paths:
       tags:
         - 'draft order'
       parameters:
-        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreNameParam'
-        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreStatusParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNameParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderStatusParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
-        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreNotesParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNotesParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/shopifyIdParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreIdParam'
-        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#//components/parameters/offsetParam'
-        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#//components/parameters/limitParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/limitParam'
       responses:
         '200':
           description: ok
@@ -1067,46 +1115,13 @@ paths:
       tags:
         - 'draft order'
       parameters:
-        - in: query
-          name: name
-          description: " exact text including case " 
-          schema:
-            type: string
-            example: "XL Centres"
-        - in: query
-          name: status
-          description: 'a string of a valid status type. draft, expired or open'
-          schema:
-            type: string
-            example: open
-        - in: query
-          name: targetDate
-          description: 'a date. will return all draft orders that are more recent that this date'
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: centreType
-          description: 'One of small, medium or large'
-          schema:
-            type: string
-            enum: ['small', 'medium', 'large']
-        - in: query
-          name: notes
-          description: 'wildcard search of the order notes'
-          schema:
-            type: string
-            example: 'some text'
-        - in: query
-          name: shopifyId
-          schema:
-            type: integer
-            example: 12355435646
-        - in: query
-          name: centreId
-          schema:
-            type: string
-            example: '999werewrw9e99'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNameParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderStatusParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNotesParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/shopifyIdParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreIdParam'
       responses:
         '200':
           description: ok
@@ -2675,7 +2690,7 @@ components:
             - 'large'
         _linkedCabinetId:
           type: string
-          example: 'cabinetid'
+          example: '213123iorewqrr'
         shopifyDraftOrder: 
           type: object
     Order:
