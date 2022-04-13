@@ -47,7 +47,131 @@ tags:
     description: 'all other cb related costs'
   - name: CBReports
     description: 'aggregations and other calculations'
+  - name: CBInvoice
+    description: 'all methods related to Copper Beech Invoicing'
 paths:
+  /cb/invoices/{invoiceId}:
+    summary: 'methods for a specific cb invoice'
+    parameters:
+    - in: path
+      name: invoiceId
+      required: true
+      schema:
+        type: string
+    get:
+      tags:
+        - CBInvoice
+      operationId: getCBInvoiceById
+      responses:
+        '200':
+          description: ' a single invoice object'
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: 'unexpected error'
+    delete:
+      tags:
+        - CBInvoice
+      operationId: deleteCBInvoiceById
+      responses:
+        '200':
+          description: 'invoice deleted'
+        '400':
+          description: 'unexpected error'
+  /cb/invoices:
+    summary: 'all methods releated to copper Beech Invoicing'
+    get:
+      tags:
+        - CBInvoice
+      operationId: getCBInvoices
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: number
+            format: int32
+            example: 1
+        - in: query
+          name: year
+          schema:
+            type: number
+            format: int32
+            example: 2021
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
+      responses:
+        '200':
+          description: 'returns an invoice object'
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: 'unexpected error'
+    post:
+      tags:
+        - CBInvoice
+      operationId: createInvoice
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: number
+            format: int32
+            example: 1
+        - in: query
+          name: year
+          schema:
+            type: number
+            format: int32
+            example: 2021
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
+      responses:
+        '201':
+          description: 'invoice object created'
+        '400':
+          description: ' unexpected error'
+  /cb/reports/invoice/summary:
+    summary: ' an array of invoice like aggregated totals for a given set of customers for a give month and year'
+    get:
+      tags:
+        - CBReports
+      operationId: getCustomerSummary
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: number
+            format: int32
+            example: 01
+        - in: query
+          name: year
+          schema:
+            type: number
+            format: int32
+            example: 2021
+        - in: query
+          name: customerIds
+          schema:
+            type: array
+            items:
+                type: string
+                example: 'copper12345'
+        - in: query
+          name: active
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: 'returns a single results object'
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBInvoice'
+        '400':
+          description: 'unexpected error'
   /cb/reports/movements/totals.json:
     summary: 'totals the pre tax, tax and inclusive of tax totals based on parameters'
     get:
@@ -61,6 +185,12 @@ paths:
             type: number
             format: int32
             example: 1
+        - in: query
+          name: year
+          schema:
+            type: number
+            format: int32
+            example: 2021
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
       responses:
         '200':
@@ -69,6 +199,8 @@ paths:
             application/json:
               schema:
                 $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBReportMovementTotals'
+        '400':
+          description: 'unexpected error'
   /cb/reports/tasks/totals.json:
     summary: 'totals the pre tax, tax and inclusive of tax totals based on parameters'
     get:
@@ -82,6 +214,17 @@ paths:
             type: number
             format: int32
             example: 1
+        - in: query
+          name: year
+          schema:
+            type: number
+            format: int32
+            example: 2021
+        - in: query
+          name: type
+          schema:
+            type: string
+            example: 'fulfillemnt'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
       responses:
         '200':
@@ -90,6 +233,8 @@ paths:
             application/json:
               schema:
                 $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBReportTaskTotals'
+        '400':
+          description: 'unexpected error'
   /cb/reports/costs/totals.json:
     summary: 'totals the pre tax, tax and inclusive of tax totals based on parameters'
     get:
@@ -103,6 +248,22 @@ paths:
             type: number
             format: int32
             example: 1
+        - in: query
+          name: year
+          schema:
+            type: number
+            format: int32
+            example: 2021
+        - in: query
+          name: type
+          schema:
+            type: string
+            example: 'adhoc'
+        - in: query
+          name: name
+          schema:
+            type: string
+            example: 'storage'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
       responses:
         '200':
@@ -111,6 +272,8 @@ paths:
             application/json:
               schema:
                 $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBReportCostTotals'
+        '400':
+          description: 'unexpected error'
   /cb/tasks:
     summary: 'cb related chargeable tasks'
     get:
@@ -121,8 +284,10 @@ paths:
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBFromDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBTaskTypeParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBEmployeeNameParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/limitParam'
+
       responses:
         '200':
           description: 'get an array of tasks'
@@ -430,6 +595,27 @@ paths:
                   $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContract'
         '400': 
           description: 'unpexpected error'
+    post:
+      summary: create a new contract
+      operationId: addContract
+      tags:
+        - CBContracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContract'
+      responses:
+        '200':
+          description: returns a copy of the created object
+          content:
+            application/json:
+             schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContract'
+        '422':
+          description: 'valid object but unable to process. Could be due to a duplicate Id being supplied or the related customer has a contract already or does not exist'
+        '400':
+          description: 'unepected error'
   /cb/contracts/{contractId}:
     summary: 'get a single contract by its unique id'
     parameters:
@@ -452,6 +638,26 @@ paths:
                 $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContract'
         '400':
           description: 'unexpected exception'
+    put:
+      tags:
+        - CBContracts
+      operationId: updateContract
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContract'               
+      responses:
+        '200':
+          description: returns a copy of the created object
+          content:
+            application/json:
+             schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContract'
+        '422':
+          description: 'valid object but unable to process. Could be due to a duplicate Id being supplied or the related customer has a contract already or does not exist'
+        '400':
+          description: 'unepected error'      
     delete:
       tags:
         - CBContracts
@@ -462,6 +668,134 @@ paths:
           description: 'deletes the contract'
         '400': 
           description: 'unexpected error'
+  /cb/contracts/{contractId}/charges:
+    parameters:
+      - in: path
+        name: contractId
+        required: true
+        schema:
+          type: string
+          example: '234234sdrwerewrw'
+    summary: 'methods for interacting with individual charge definitions'
+    get:
+      tags:
+        - CBContracts
+      summary: 'returns array of all charges'
+      operationId: getContractCharges
+      responses:
+        '200':
+          description: 'returns an array of all charges'
+          content:
+            application/json:
+             schema:
+              type: array
+              items:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBChargeItem'
+        '400':
+          description: 'unexpected error'
+    post:
+      tags:
+        - CBContracts
+      summary: "add or update a charge to a given contract"
+      operationId: upsertContractCharge
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBChargeItem'      
+      responses:
+        '200':
+          description: "just returns ok to indicate change was applied"
+        '400':
+          description: "unexpected error"
+  /cb/contracts/{contractId}/costs:
+    parameters:
+      - in: path
+        name: contractId
+        required: true
+        schema:
+          type: string
+          example: '234234sdrwerewrw'
+    summary: 'methods for interacting with individual cost definitions'
+    get:
+      tags:
+        - CBContracts
+      summary: 'returns array of all costs'
+      operationId: getContractCosts
+      responses:
+        '200':
+          description: 'returns an array of all charges'
+          content:
+            application/json:
+             schema:
+              type: array
+              items:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContractCostItem'
+        '400':
+          description: 'unexpected error'
+    post:
+      tags:
+        - CBContracts
+      summary: "add or update a charge to a given contract"
+      operationId: upsertContractCost
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBContractCostItem'      
+      responses:
+        '200':
+          description: "just returns ok to indicate change was applied"
+        '400':
+          description: "unexpected error"
+  /cb/contracts/{contractId}/costs/{costId}:
+    summary: "methods to work with a specific cost"
+    delete:
+      tags:
+        - CBContracts
+      operationId: deleteContractCost
+      parameters:
+        - in: path
+          name: contractId
+          required: true
+          schema:
+            type: string
+            example: '234234sdrwerewrw'
+        - in: path
+          name: costId
+          required: true
+          schema:
+            type: string
+            example: 'dsfdsfdsfsd'
+      responses:
+        '200':
+          description: 'deletes the cost definition'
+        '400': 
+          description: 'unexpected error'
+  /cb/contracts/{contractId}/charges/{chargeId}:
+    summary: "methods to work with a specific charge"
+    delete:
+      tags:
+        - CBContracts
+      operationId: deleteContractCharge
+      parameters:
+        - in: path
+          name: contractId
+          required: true
+          schema:
+            type: string
+            example: '234234sdrwerewrw'
+        - in: path
+          name: chargeId
+          required: true
+          schema:
+            type: string
+            example: 'dsfdsfdsfsd'
+      responses:
+        '200':
+          description: 'deletes the charge definition'
+        '400': 
+          description: 'unexpected error'        
   /cb/customers:
     summary: 'methods related to copper beech fulfillment customers'
     get:
@@ -469,6 +803,7 @@ paths:
         - CBCustomers
       operationId: getCBCustomers
       parameters: 
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerStatusParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerNameParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
@@ -527,6 +862,21 @@ paths:
                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBCustomer'
         '400':
           description: 'unexpected exception'
+    put:
+      tags:
+        - CBCustomers
+      summary: 'update an existing cb customer'
+      operationId: updateCustomer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CBCustomer'       
+      responses:
+        '200':
+          description: 'updated ok'
+        '400':
+          description: 'unexpected error'
     delete:
       tags:
         - CBCustomers
@@ -559,6 +909,28 @@ paths:
                   totalAmount:
                     type: number
                     example: 515.34
+        '400':
+          description: "unexpected error"
+        '401':
+          description: "unauthorised"
+  /reports/draftorder/ytd/totals:
+    summary: "get the year to date totals and the previous year's totals to the same period in that previous year. Also returns % increase or decrease"
+    parameters:
+      - $ref: "https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNameParam"
+      - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderStatusParam'
+      - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
+      - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/centreTypeParam'
+    get:
+      tags:
+        - reports
+      operationId: getYTDTotals
+      responses:
+        '200':
+          description: "returns a summary object"
+          content:
+            application/json:
+              schema:
+                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/ReportMTDObject'
         '400':
           description: "unexpected error"
         '401':
@@ -1013,6 +1385,62 @@ paths:
             application/json:
               schema:
                $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/Invoice' 
+        '400':
+          description: 'unexpected error'
+  /auth/passwordreset.json:
+    get:
+      summary: 'returns a form but expects a valid token and user id is presented as a parameter'
+      tags:
+       - user
+      operationId: getPasswordResetPage
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+            example: 'wereawewae23432423adadsasd'
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 'asdsad234234ear'
+      responses:
+        '200':
+          description: 'a html page with a form'
+          content:
+            text/html:
+              schema:
+                type: string
+                example: '<html><body><div> <form> </form></div></body> </html>'
+        '400':
+          description: 'unexpected error'
+    post:
+      tags:
+        - user
+      operationId: passwordReset
+      requestBody:
+        content:
+          application/json:
+            schema:
+             type: object
+      responses:
+        '200':
+          description: 'password reset successful'
+        '400':
+          description: 'unexpected error'
+  /auth/requestpasswordreset.json:
+    post:
+      tags:
+        - user
+      operationId: requestPasswordReset
+      requestBody:
+        content:
+          application/json:
+            schema:
+             type: object
+      responses:
+        '200':
+          description: 'password reset successful'
         '400':
           description: 'unexpected error'
   /login:
@@ -1576,6 +2004,7 @@ paths:
       tags:
         - 'draft order'
       parameters:
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderFieldsParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderNameParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/draftOrderStatusParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/targetDateParam'
@@ -3208,6 +3637,11 @@ components:
         _linkedCabinetId:
           type: string
           example: '213123iorewqrr'
+        _learningCentreId:
+          type: string
+          example: 'asdfds3rewrewrwe'
+        learningCentre:
+            $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/LearningCentre'
         shopifyDraftOrder: 
           type: object
     Order:
