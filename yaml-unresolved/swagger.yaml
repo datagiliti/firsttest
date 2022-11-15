@@ -10,6 +10,8 @@ info:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
+  - name: carrier
+    description: carrier related data 
   - name: report
     description: "all aggregated reports"
   - name: centre
@@ -27,6 +29,8 @@ tags:
       this is list of order lineitems that belong to a specific student within a
       school order
   - name: user
+  - name: process
+    description: 'used to indicate this is a complex process or aggregation api'
   - name: processOrder
     description: 'any tag starting with the word process implies there is complex logic. This is distinct and seprate from the base system api functions. In this case anything tagged processOrder will include some complex process interaction with other APIS eg user rewards points or a related cabinet'
   - name: container
@@ -50,6 +54,25 @@ tags:
   - name: CBInvoice
     description: 'all methods related to Copper Beech Invoicing'
 paths:
+  /cb/carrier/order:
+    summary: 'all data ingested from carriers'
+    post:
+      tags:
+        - carrier
+      operationId: upsertOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/schemas/CarrierData'
+      responses:
+        '200': 
+          description: 'carrier line updated'
+        '201':
+          description: 'Carrier line created'
+        '400':
+          description: ' unexpected error'
+  
   /cb/invoices/{invoiceId}:
     summary: 'methods for a specific cb invoice'
     parameters:
@@ -152,6 +175,12 @@ paths:
             format: int32
             example: 2021
         - in: query
+          name: quarter
+          schema:
+            type: number
+            format: int32
+            example: 2
+        - in: query
           name: customerIds
           schema:
             type: array
@@ -191,6 +220,12 @@ paths:
             type: number
             format: int32
             example: 2021
+        - in: query
+          name: quarter
+          schema:
+            type: number
+            format: int32
+            example: 2
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
       responses:
         '200':
@@ -220,6 +255,12 @@ paths:
             type: number
             format: int32
             example: 2021
+        - in: query
+          name: quarter
+          schema:
+            type: number
+            format: int32
+            example: 2
         - in: query
           name: type
           schema:
@@ -255,6 +296,12 @@ paths:
             format: int32
             example: 2021
         - in: query
+          name: quarter
+          schema:
+            type: number
+            format: int32
+            example: 2
+        - in: query
           name: type
           schema:
             type: string
@@ -282,6 +329,7 @@ paths:
       operationId: getCBTasks 
       parameters: 
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBFromDateParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBEndDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBTaskTypeParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBEmployeeNameParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
@@ -388,7 +436,7 @@ paths:
         '422': 
           description: 'body was not an array - or is invalid'
   /cb/movements:
-    summary: 'shipping related cb costs'
+    summary: 'shipping related cb costs. the endDate parameter is there to limit the results. if end date is set this is exclusive not inclusive'
     get:
       tags:
         - CBMovements
@@ -398,6 +446,7 @@ paths:
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCarrierParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBDispatchDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBOrderDateParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBEndDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/limitParam'
@@ -491,6 +540,7 @@ paths:
       parameters: 
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBCustomerIdParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBFromDateParam'
+        - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBEndDateParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/CBTaskTypeParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/offsetParam'
         - $ref: 'https://api.swaggerhub.com/domains/Copper-Beech/GLRCommon/1.0.1#/components/parameters/limitParam'
@@ -1078,6 +1128,12 @@ paths:
         schema:
           type: string
           example: 'S'
+      - in: query
+        name: closed
+        schema:
+          type: boolean
+          example: true
+          default: false
     get:
       tags:
         - centre
@@ -1997,6 +2053,32 @@ paths:
           description: invalid operation
         '404':
           description: not found
+  /store/draftorder/{draftorderid}/inventorycheck.json:
+    get:
+      operationId: processGetDraftOrderInventory
+      summary: 'a process API that returns an array of variant ids enriched with the corresponding inventory_quantity from the shopify product'
+      tags:
+        - 'draft order'
+        - 'process'
+      parameters:
+        - name: 'draftorderid'
+          in: path
+          required: true
+          description: 'a valid draft order id'
+          schema:
+            type: string
+            example: sdfdsfdsf324324ewrw
+      responses:
+        '200':
+          description: ' an array of objects. the objects contain the product title, the variant in the line and the inventory quantity for that variant'
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  type: object
+        '404':
+          description: nothing found
   /store/draftorder:
     get:
       operationId: getDraftOrders
